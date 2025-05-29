@@ -1,5 +1,7 @@
 # akumanager
-aku 管理端
+aku 管理端 
+>>解决按键按不明白的问题
+
 请放入到 /opt/akumanager
 
 步骤
