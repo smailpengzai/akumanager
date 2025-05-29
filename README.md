@@ -9,6 +9,7 @@ aku 管理端
 >mkdir /opt/akumanager
 将代码放入到 /opt/akumanager 目录下
 
+```bash
 cat <<EOF > /etc/systemd/system/akumanager.service
 [Unit]
 Description=aku Manager Service
@@ -20,6 +21,7 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 EOF
+```
 
 3. 配置开机启动
 >systemctl enable akumanager
