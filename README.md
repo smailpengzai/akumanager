@@ -2,9 +2,7 @@
 aku 管理端 
 >>解决按键按不明白的问题
 
-请放入到 /opt/akumanager
-
-步骤
+# 使用步骤
 1. 编译
 >go build -o akumanager main.go
 2. 配置
