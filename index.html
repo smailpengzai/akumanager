@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务管理系统</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="device-name">服务管理系统</div>
+        <div class="device-status">
+            系统服务监控控制台
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="control-section">
+            <div class="section-title">设备控制</div>
+            <div class="device-controls">
+                <div class="volume-control" style="flex: 4;">
+                    <div class="section-title" style="margin-bottom: 10px;">音量控制</div>
+                    <div class="volume-container">
+                        <div class="volume-display">
+                            <span id="volumeValue">0</span>
+                            <div class="volume-range">1 - 63</div>
+                        </div>
+                        <input type="range" class="volume-slider" min="1" max="63" value="1"
+                               oninput="adjustVolume(this.value)" id="volumeSlider">
+                    </div>
+                </div>
+                <div class="led-control" style="flex: 1;">
+                    <div class="section-title" style="margin-bottom: 10px;">LED灯控制</div>
+                    <div class="switch-container">
+                        <span class="switch-label">LED灯状态</span>
+                        <div class="switch" id="ledSwitch" onclick="toggleLED()">
+                            <div class="switch-thumb"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <div class="section-title">服务状态</div>
+            <div id="servicesList">
+                <!-- 服务列表将动态生成 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>
