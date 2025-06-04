@@ -8,6 +8,7 @@ aku 管理端
 2. 配置
 >mkdir /opt/akumanager
 将代码放入到 /opt/akumanager 目录下
+天气修改功能需要将 tqstation1.yaml和akutq_city.conf 放入到 /etc 目录下
 
 ```bash
 cat <<EOF > /etc/systemd/system/akumanager.service
