@@ -331,3 +331,33 @@ body {
     border: 1px solid #ddd;
     font-size: 16px;
 }
+
+/* 磁盘使用情况样式 */
+.disk-usage {
+    margin-top: 20px;
+}
+
+.disk-usage-info {
+    background: #f5f5f5;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.disk-usage-text {
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.disk-usage-bar {
+    height: 10px;
+    background: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.disk-usage-progress {
+    height: 100%;
+    background: #667eea;
+    width: 0%;
+    transition: width 0.5s;
+}

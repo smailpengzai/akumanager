@@ -87,6 +87,8 @@ func main() {
 	r.HandleFunc("/api/cities", GetCitiesHandler).Methods("GET")
 	r.HandleFunc("/api/currentcity", GetCurrentCityHandler).Methods("GET")
 	r.HandleFunc("/api/city", UpdateCityCodeHandler).Methods("POST")
+	// 添加磁盘使用情况的路由
+	r.HandleFunc("/api/diskusage", GetDiskUsageHandler).Methods("GET")
 	// 前端页面路由
 	r.HandleFunc("/", IndexHandler)
 
@@ -399,4 +401,40 @@ func UpdateCityCodeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(map[string]string{"message": "城市已更新"})
+}
+
+// 获取磁盘使用情况
+func GetDiskUsageHandler(w http.ResponseWriter, r *http.Request) {
+	cmd := exec.Command("df", "-h", "/")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("获取磁盘使用情况失败: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// 解析输出
+	lines := strings.Split(string(output), "\n")
+	if len(lines) < 2 {
+		http.Error(w, "解析磁盘使用情况失败", http.StatusInternalServerError)
+		return
+	}
+
+	// 获取第二行数据
+	parts := strings.Fields(lines[1])
+	if len(parts) < 5 {
+		http.Error(w, "解析磁盘使用情况失败", http.StatusInternalServerError)
+		return
+	}
+
+	// 提取总空间、已用空间和百分比
+	total := parts[1]
+	used := parts[2]
+	percentage := parts[4]
+	percentage = strings.TrimSuffix(percentage, "%")
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"total":      total,
+		"used":       used,
+		"percentage": percentage,
+	})
 }

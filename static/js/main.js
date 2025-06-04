@@ -6,11 +6,15 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchServicesStatus();
     fetchLEDStatus();
     fetchVolume();
+// 页面加载时获取磁盘使用情况
+    fetchDiskUsage();
+
 
     // // 每1秒刷新一次服务状态
-    // setInterval(fetchServicesStatus, 1000);
-    // setInterval(fetchVolume, 1000);
-    // setInterval(fetchLEDStatus, 1000);
+    setInterval(fetchServicesStatus, 5000);
+    setInterval(fetchVolume, 5000);
+    setInterval(fetchLEDStatus, 5000);
+    setInterval(fetchDiskUsage, 5000);
 });
 var cityCode = ""
 // 获取服务状态
@@ -235,5 +239,23 @@ function updateCityCode() {
                 text: '更新城市失败: ' + error.message
             });
             console.error('更新城市失败:', error);
+        });
+}
+
+// 获取磁盘使用情况
+function fetchDiskUsage() {
+    fetch('/api/diskusage')
+        .then(response => response.json())
+        .then(data => {
+            const diskUsageText = document.querySelector('.disk-usage-text');
+            const diskUsageProgress = document.querySelector('.disk-usage-progress');
+
+            diskUsageText.textContent = `已用: ${data.used} GB / 总计: ${data.total} GB`;
+            diskUsageProgress.style.width = `${data.percentage}%`;
+        })
+        .catch(error => {
+            console.error('获取磁盘使用情况失败:', error);
+            const diskUsageText = document.querySelector('.disk-usage-text');
+            diskUsageText.textContent = '获取磁盘使用情况失败';
         });
 }
