@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"gopkg.in/yaml.v3"
 )
 
 type ServiceStatus struct {
@@ -23,18 +24,37 @@ type ServiceStatus struct {
 	Description string `json:"description"`
 }
 
+// 城市结构体
+type City struct {
+	City     string `yaml:"city"`
+	Code     string `yaml:"code"`
+	Province string `yaml:"province"`
+	URL      string `yaml:"url"`
+}
+
+// 省份结构体
+type Province struct {
+	Code   string `yaml:"code"`
+	Name   string `yaml:"name"`
+	URL    string `yaml:"url"`
+	Cities []City `yaml:"-"` // 用于存储解析出的城市信息
+}
+
+// tqstation1.yaml 数据结构
+var tqstation1 map[string]Province
 var (
 	services = []ServiceStatus{
+		{Name: "xiaozhi", Description: "小智语音服务"},
 		{Name: "sysboot", Description: "系统启动服务"},
 		{Name: "showtime", Description: "时间显示服务"},
-		{Name: "akuweb", Description: "网页控制台服务"},
-		{Name: "akuapp", Description: "APP后台服务"},
 		{Name: "fm", Description: "网络收音机服务"},
 		{Name: "ttyd", Description: "网页终端服务"},
 		{Name: "shairport-sync", Description: "AirPlay服务"},
-		{Name: "xiaozhi", Description: "小智语音服务"},
+		{Name: "bluealsad-aplay", Description: "蓝牙服务"},
 		{Name: "dlna", Description: "DLNA服务"},
 		{Name: "alist", Description: "文件服务"},
+		{Name: "akuweb", Description: "网页控制台服务"},
+		{Name: "akuapp", Description: "APP后台服务"},
 	}
 	serviceStatusMap = make(map[string]ServiceStatus)
 	muxLock          sync.Mutex
@@ -44,6 +64,10 @@ func main() {
 	// 初始化服务状态
 	for _, service := range services {
 		serviceStatusMap[service.Name] = service
+	}
+	// 读取 tqstation1.yaml 文件
+	if err := loadTQStationYAML(); err != nil {
+		log.Fatalf("加载 tqstation1.yaml 失败: %v", err)
 	}
 
 	// 启动服务状态监控
@@ -59,7 +83,10 @@ func main() {
 	r.HandleFunc("/api/volume", SetVolumeHandler).Methods("POST")
 	r.HandleFunc("/api/led", GetLEDHandler).Methods("GET")
 	r.HandleFunc("/api/led", SetLEDHandler).Methods("POST")
-
+	// 添加城市数据相关的路由
+	r.HandleFunc("/api/cities", GetCitiesHandler).Methods("GET")
+	r.HandleFunc("/api/currentcity", GetCurrentCityHandler).Methods("GET")
+	r.HandleFunc("/api/city", UpdateCityCodeHandler).Methods("POST")
 	// 前端页面路由
 	r.HandleFunc("/", IndexHandler)
 
@@ -240,4 +267,136 @@ func SetLEDHandler(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"state":   led.State,
 	})
+}
+
+// 加载 tqstation1.yaml 文件
+func loadTQStationYAML() error {
+	yamlFile, err := os.ReadFile("/etc/tqstation1.yaml")
+	if err != nil {
+		return err
+	}
+
+	// 定义一个临时结构来解析省份的基本信息和城市信息
+	type RawProvince map[string]interface{}
+
+	// 临时存储解析后的数据
+	rawTqstation1 := make(map[string]RawProvince)
+	err = yaml.Unmarshal(yamlFile, &rawTqstation1)
+	if err != nil {
+		return err
+	}
+
+	// 初始化 tqstation1
+	tqstation1 = make(map[string]Province)
+
+	// 遍历每个省份
+	for provinceName, rawProvince := range rawTqstation1 {
+		var province Province
+
+		// 解析省份的基本信息
+		if code, ok := rawProvince["code"].(string); ok {
+			province.Code = code
+		}
+		if name, ok := rawProvince["name"].(string); ok {
+			province.Name = name
+		}
+		if url, ok := rawProvince["url"].(string); ok {
+			province.URL = url
+		}
+		// 解析城市信息
+		for key, value := range rawProvince {
+			// 跳过省份的基本信息字段
+			if key == "code" || key == "name" || key == "url" {
+				continue
+			}
+
+			// 检查是否是城市信息
+			jsonData, _ := json.Marshal(value)
+			var city City
+			json.Unmarshal(jsonData, &city)
+			province.Cities = append(province.Cities, city)
+		}
+
+		tqstation1[provinceName] = province
+	}
+
+	// 打印解析后的数据以检查
+	//fmt.Println(tqstation1)
+	return nil
+}
+
+// 获取所有城市
+func GetCitiesHandler(w http.ResponseWriter, r *http.Request) {
+	var cities []City
+	for _, province := range tqstation1 {
+		for _, city := range province.Cities {
+			cities = append(cities, city)
+		}
+	}
+	json.NewEncoder(w).Encode(cities)
+}
+
+// 获取当前城市配置
+func GetCurrentCityHandler(w http.ResponseWriter, r *http.Request) {
+	// 直接读取文件内容
+	configData, err := os.ReadFile("/etc/akutq_city.conf")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("获取城市配置失败: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	configStr := string(configData)
+	configStr = strings.TrimSpace(configStr)
+	parts := strings.Split(configStr, "=")
+	if len(parts) != 2 {
+		http.Error(w, "城市配置格式错误", http.StatusInternalServerError)
+		return
+	}
+	cityCode := parts[1]
+
+	// 查找城市信息
+	var cityInfo City
+	for _, province := range tqstation1 {
+		for _, city := range province.Cities {
+			if city.Code == cityCode {
+				cityInfo = city
+				break
+			}
+		}
+		if cityInfo.Code != "" {
+			break
+		}
+	}
+
+	if cityInfo.Code == "" {
+		http.Error(w, "未找到城市信息", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"city":     cityInfo.City,
+		"code":     cityInfo.Code,
+		"province": cityInfo.Province,
+	})
+}
+
+// 更新城市代码
+func UpdateCityCodeHandler(w http.ResponseWriter, r *http.Request) {
+	var city struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&city); err != nil {
+		http.Error(w, "请求解析失败", http.StatusBadRequest)
+		return
+	}
+
+	// 写入城市配置文件
+	content := fmt.Sprintf("city_code=%s", city.Code)
+	err := os.WriteFile("/etc/akutq_city.conf", []byte(content), 0644)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("更新城市配置失败: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"message": "城市已更新"})
 }

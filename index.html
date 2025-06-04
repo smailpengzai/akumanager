@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>服务管理系统</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <!-- 引入 SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- 引入 select2 CSS -->
+<!--    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">-->
 </head>
 <body>
 <div class="container">
@@ -48,9 +52,26 @@
                 <!-- 服务列表将动态生成 -->
             </div>
         </div>
+        <div class="control-section">
+            <div class="section-title">天气城市配置</div>
+            <div class="city-config">
+                <div class="city-info" id="cityInfo">
+                    <!-- 当前城市信息将动态生成 -->
+                </div>
+                <div class="city-selector">
+                    <select id="citySelect" onchange="updateCityCode()">
+                        <!-- 城市选项将动态生成 -->
+                    </select>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script src="/static/js/main.js"></script>
+<!-- 引入 SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.min.js"></script>
+<!-- 引入 select2 JS -->
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>-->
 </body>
 </html>

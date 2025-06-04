@@ -307,3 +307,27 @@ body {
     align-items: center;
     gap: 2px; /* 设置状态和服务操作按钮之间的间距为2px */
 }
+.city-config {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.city-info {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.city-selector {
+    width: 100%;
+}
+
+#citySelect {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 16px;
+}

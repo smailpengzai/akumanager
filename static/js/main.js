@@ -1,14 +1,18 @@
 document.addEventListener('DOMContentLoaded', function() {
     // 初始加载服务状态
+    // 先加载城市数据，再加载当前城市信息
+    fetchCurrentCity();
+    fetchCities();
     fetchServicesStatus();
-
-    // 每30秒刷新一次服务状态
-    setInterval(fetchServicesStatus, 30000);
-
-    // 初始化音量控制
+    fetchLEDStatus();
     fetchVolume();
-});
 
+    // // 每1秒刷新一次服务状态
+    // setInterval(fetchServicesStatus, 1000);
+    // setInterval(fetchVolume, 1000);
+    // setInterval(fetchLEDStatus, 1000);
+});
+var cityCode = ""
 // 获取服务状态
 function fetchServicesStatus() {
     fetch('/api/services')
@@ -110,23 +114,6 @@ function adjustVolume(value) {
         .catch(error => console.error('设置音量失败:', error));
 }
 
-// 在页面加载时初始化音量
-fetchVolume();
-
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始加载服务状态
-    fetchServicesStatus();
-
-    // 每30秒刷新一次服务状态
-    setInterval(fetchServicesStatus, 30000);
-
-    // 初始化音量控制
-    fetchVolume();
-
-    // 初始化LED灯状态
-    fetchLEDStatus();
-});
-
 // 获取LED灯状态
 function fetchLEDStatus() {
     fetch('/api/led')
@@ -165,4 +152,88 @@ function toggleLED() {
             }
         })
         .catch(error => console.error('切换LED灯状态失败:', error));
+}
+
+// 获取所有城市
+function fetchCities() {
+    fetch('/api/cities')
+        .then(response => response.json())
+        .then(cities => {
+            const citySelect = document.getElementById('citySelect');
+            citySelect.innerHTML = ''; // 清空选项
+
+            cities.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city.Code;
+                option.textContent = `${city.City} (${city.Province})`;
+                if (city.Code === cityCode) {
+                    option.selected = true;
+                }
+                citySelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('获取城市数据失败:', error));
+}
+
+// 获取当前城市信息
+function fetchCurrentCity() {
+    fetch('/api/currentcity')
+        .then(response => response.json())
+        .then(cityData => {
+            const cityInfo = document.getElementById('cityInfo');
+            cityInfo.innerHTML = `
+                <div>当前城市: ${cityData.city}</div>
+                <div>城市代码: ${cityData.code}</div>
+                <div>省份: ${cityData.province}</div>
+            `;
+
+            // 设置默认选中项
+            const citySelect = document.getElementById('citySelect');
+            if (citySelect) {
+                citySelect.value = cityData.code;
+                cityCode = cityData.code;
+            }
+        })
+        .catch(error => {
+            console.error('获取当前城市失败:', error);
+            return Promise.reject(error);
+        });
+}
+
+// 更新城市代码
+function updateCityCode() {
+    const citySelect = document.getElementById('citySelect');
+    const selectedCode = citySelect.value;
+
+    fetch('/api/city', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: selectedCode })
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('更新城市失败');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // 显示成功消息
+            Swal.fire({
+                icon: 'success',
+                title: '成功',
+                text: data.message
+            });
+            fetchCurrentCity(); // 更新当前城市显示
+        })
+        .catch(error => {
+            // 显示失败消息
+            Swal.fire({
+                icon: 'error',
+                title: '错误',
+                text: '更新城市失败: ' + error.message
+            });
+            console.error('更新城市失败:', error);
+        });
 }
