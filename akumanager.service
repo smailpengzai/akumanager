@@ -1,0 +1,11 @@
+[Unit]
+Description=aku Manager Service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/servicemanager
+ExecStart=/opt/servicemanager/akumanager
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
