@@ -1,8 +1,8 @@
 #!/bin/bash
 mkdir -p /opt/akumanager
-mv ./akumanager /opt/akumanager/
-mv ./index.html /opt/akumanager/
-mv ./static /opt/akumanager/
+mv -f ./akumanager /opt/akumanager/
+mv -f ./index.html /opt/akumanager/
+mv -f ./static /opt/akumanager/
 cp --no-clobber ./akutq_city.conf /etc
 cp --no-clobber ./tqstation1.yaml /etc
 cp --no-clobber ./akumanager.service /etc/systemd/system/
