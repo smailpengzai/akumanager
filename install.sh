@@ -2,6 +2,7 @@
 mkdir -p /opt/akumanager
 mv -f ./akumanager /opt/akumanager/
 mv -f ./index.html /opt/akumanager/
+rm -rf /opt/akumanager/static
 mv -f ./static /opt/akumanager/
 cp --no-clobber ./akutq_city.conf /etc
 cp --no-clobber ./tqstation1.yaml /etc
