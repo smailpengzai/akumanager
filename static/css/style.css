@@ -361,3 +361,56 @@ body {
     width: 0%;
     transition: width 0.5s;
 }
+
+
+.radio-main-layout { display: flex; gap: 15px; background: #1a1a1a; padding: 15px; border-radius: 10px; border: 2px solid #333; }
+.radio-display { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.lcd-screen {
+    background: #92a47e;
+    color: #1a2310;
+    text-shadow: 1px 1px 0px rgba(255,255,255,0.2); /* 增加一点立体感 */
+    font-family: "Courier New", monospace;
+    font-weight: bold;
+}
+#lcd-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; }
+.radio-controls { display: flex; justify-content: space-around; margin-top: 15px; }
+.radio-controls button { background: #333; color: white; border: 1px solid #444; padding: 10px; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; transition: 0.2s; }
+.radio-controls button:hover { background: #444; border-color: #ff6600; }
+.radio-controls .main-btn { background: #ff6600; color: #fff; width: 55px; height: 55px; font-size: 1.2em; }
+
+.radio-list-area { flex: 1; border-left: 1px solid #333; padding-left: 15px; display: flex; flex-direction: column; }
+.fm-scroll-list { height: 160px; overflow-y: auto; font-size: 0.9em; }
+.fm-item.active { color: #ff6600; background: #2c2c2c; font-weight: bold; }
+
+
+/* 针对列表项的文字颜色 */
+.fm-item {
+    padding: 10px;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+    color: #ecf0f1; /* 设置为近白色，确保可见 */
+    font-size: 14px;
+    transition: all 0.2s;
+}
+/* 悬停时的颜色变化 */
+.fm-item:hover {
+    background-color: #2c2c2c;
+    color: #ff6600; /* 悬停时变成橙色，更有互动感 */
+}
+/* 搜索框输入的文字颜色 */
+#fmSearch {
+    background: #333;
+    border: 1px solid #444;
+    color: #ffffff; /* 确保搜索框输入的字也是白的 */
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+/* 滚动条美化（可选，防止白色滚动条太刺眼） */
+.fm-scroll-list::-webkit-scrollbar {
+    width: 6px;
+}
+.fm-scroll-list::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 3px;
+}

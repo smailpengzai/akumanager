@@ -16,6 +16,94 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(fetchLEDStatus, 5000);
     setInterval(fetchDiskUsage, 5000);
 });
+
+
+let allStations = [];
+let currentIdx = -1;
+let isPlaying = false;
+
+// 加载电台列表
+function loadFMList() {
+    fetch('/api/fm/list')
+        .then(res => res.json())
+        .then(data => {
+            allStations = data.channels;
+            renderList(allStations);
+            document.getElementById('lcd-status').innerText = "UPDATED: " + (data.updatetime || 'NOW');
+        });
+}
+
+// 确保渲染函数里没有设置特殊的颜色样式
+function renderList(stations) {
+    const list = document.getElementById('fmList');
+    list.innerHTML = '';
+    stations.forEach((ch, index) => {
+        const div = document.createElement('div');
+        // 这里的 class 会应用我们上面写的 CSS
+        div.className = `fm-item ${currentIdx === index ? 'active' : ''}`;
+        div.innerHTML = `<span>📻 ${ch.name}</span>`; // 用 span 包裹一下
+        div.onclick = () => playStation(index);
+        list.appendChild(div);
+    });
+}
+
+// 搜索过滤
+function filterStations() {
+    const kw = document.getElementById('fmSearch').value.toLowerCase();
+    const filtered = allStations.filter(s => s.name.toLowerCase().includes(kw));
+    renderList(filtered);
+}
+
+// 播放控制
+function playStation(index) {
+    if (index < 0 || index >= allStations.length) return;
+    currentIdx = index;
+    const ch = allStations[index];
+
+    document.getElementById('lcd-name').innerText = ch.name;
+    document.getElementById('lcd-status').innerText = "CONNECTING...";
+
+    fetch('/api/fm/play', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ url: ch.url, name: ch.name })
+    }).then(() => {
+        isPlaying = true;
+        document.getElementById('lcd-status').innerText = "PLAYING";
+        document.getElementById('playPauseBtn').innerText = "⏸";
+        renderList(allStations); // 刷新高亮
+    });
+}
+
+function togglePlayPause() {
+    if (isPlaying) {
+        stopFM();
+    } else if (currentIdx !== -1) {
+        playStation(currentIdx);
+    }
+}
+
+function stopFM() {
+    fetch('/api/fm/stop', { method: 'POST' }).then(() => {
+        isPlaying = false;
+        document.getElementById('playPauseBtn').innerText = "▶";
+        document.getElementById('lcd-status').innerText = "STOPPED";
+    });
+}
+
+function nextStation() {
+    let next = (currentIdx + 1) % allStations.length;
+    playStation(next);
+}
+
+function prevStation() {
+    let prev = (currentIdx - 1 + allStations.length) % allStations.length;
+    playStation(prev);
+}
+
+// 自动加载
+document.addEventListener('DOMContentLoaded', loadFMList);
+
 var cityCode = ""
 // 获取服务状态
 function fetchServicesStatus() {

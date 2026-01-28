@@ -1,7 +1,7 @@
 # akumanager
 aku 管理端 
 >>解决按键按不明白的问题
-
+>>新收音机功能 需要安装mpv  （ apt install mpv  ）
 # 使用步骤
 1. 编译
 >go build -o akumanager main.go

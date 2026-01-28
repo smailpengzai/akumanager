@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
@@ -61,6 +62,26 @@ var (
 	muxLock          sync.Mutex
 )
 
+// 基础电台信息
+type Channel struct {
+	Name   string `json:"name"`
+	Format string `json:"format"`
+	URL    string `json:"url"`
+}
+
+// 完整的 JSON 结构
+type RadioList struct {
+	RadioName  string    `json:"radioname"`
+	UpdateTime string    `json:"updatetime"`
+	Channels   []Channel `json:"channels"`
+}
+
+// 全局变量管理播放进程
+var (
+	currPlayCmd *exec.Cmd  // 当前正在运行的 mpv 进程
+	playMu      sync.Mutex // 确保操作进程时的线程安全
+)
+
 func main() {
 	// 初始化服务状态
 	for _, service := range services {
@@ -90,6 +111,11 @@ func main() {
 	r.HandleFunc("/api/city", UpdateCityCodeHandler).Methods("POST")
 	// 添加磁盘使用情况的路由
 	r.HandleFunc("/api/diskusage", GetDiskUsageHandler).Methods("GET")
+
+	// --- FM 电台相关 API ---
+	r.HandleFunc("/api/fm/list", GetFMListHandler).Methods("GET")
+	r.HandleFunc("/api/fm/play", PlayFMHandler).Methods("POST")
+	r.HandleFunc("/api/fm/stop", StopFMHandler).Methods("POST")
 	// 前端页面路由
 	r.HandleFunc("/", IndexHandler)
 
@@ -438,4 +464,77 @@ func GetDiskUsageHandler(w http.ResponseWriter, r *http.Request) {
 		"used":       used,
 		"percentage": percentage,
 	})
+}
+
+// 获取最新的电台列表
+func GetFMListHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置 5 秒超时，避免远程地址响应慢导致后台卡死
+	client := http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get("http://39.100.76.89:28080/download/other/fm.json")
+	if err != nil {
+		http.Error(w, "无法获取远程列表: "+err.Error(), http.StatusGatewayTimeout)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+}
+
+// 播放控制 (核心)
+func PlayFMHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		URL  string `json:"url"`
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "JSON 解析错误", http.StatusBadRequest)
+		return
+	}
+
+	playMu.Lock()
+	defer playMu.Unlock()
+
+	// 1. 如果有正在播的台，强制杀掉旧进程
+	if currPlayCmd != nil && currPlayCmd.Process != nil {
+		_ = currPlayCmd.Process.Kill()
+		_ = currPlayCmd.Wait() // 确保资源释放
+	}
+
+	// 2. 启动 mpv 播放
+	// --no-video: 只播声音
+	// --cache=yes: 开启网络缓存
+	// --cache-secs=10: 预缓存 10 秒，防止断断续续
+	fmt.Printf("[%s] 正在播放电台: %s\n", time.Now().Format("15:04:05"), req.Name)
+	currPlayCmd = exec.Command("mpv",
+		"--no-video",
+		"--cache=yes",
+		"--cache-secs=10",
+		req.URL,
+	)
+
+	// 异步启动，不阻塞 API 响应
+	err := currPlayCmd.Start()
+	if err != nil {
+		fmt.Println("启动 mpv 失败:", err)
+		http.Error(w, "播放器启动失败", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"status": "playing", "name": req.Name})
+}
+
+// 停止播放
+func StopFMHandler(w http.ResponseWriter, r *http.Request) {
+	playMu.Lock()
+	defer playMu.Unlock()
+
+	if currPlayCmd != nil && currPlayCmd.Process != nil {
+		_ = currPlayCmd.Process.Kill()
+		currPlayCmd = nil
+		fmt.Println("电台已手动停止")
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"status": "stopped"})
 }

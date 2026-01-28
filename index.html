@@ -20,6 +20,31 @@
     </div>
 
     <div class="content">
+        <div class="control-section radio-player-component">
+            <div class="section-title">网络收音机</div>
+
+            <div class="radio-main-layout">
+                <div class="radio-display">
+                    <div class="lcd-screen">
+                        <div id="lcd-name">READY</div>
+                        <div id="lcd-status">IDLE</div>
+                        <div id="lcd-time">--:--</div>
+                    </div>
+                    <div class="radio-controls">
+                        <button onclick="prevStation()" title="上一个">⏮</button>
+                        <button id="playPauseBtn" onclick="togglePlayPause()" class="main-btn">▶</button>
+                        <button onclick="stopFM()" title="停止">■</button>
+                        <button onclick="nextStation()" title="下一个">⏭</button>
+                    </div>
+                </div>
+
+                <div class="radio-list-area">
+                    <input type="text" id="fmSearch" placeholder="🔍 搜索电台..." oninput="filterStations()">
+                    <div id="fmList" class="fm-scroll-list">
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="control-section">
             <div class="section-title">设备控制</div>
             <div class="device-controls">
