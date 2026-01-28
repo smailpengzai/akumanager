@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -76,10 +77,19 @@ type RadioList struct {
 	Channels   []Channel `json:"channels"`
 }
 
+// 增加一个状态结构体
+type PlayerStatus struct {
+	CurrName  string `json:"name"`
+	CurrURL   string `json:"url"`
+	IsPlaying bool   `json:"is_playing"`
+}
+
 // 全局变量管理播放进程
 var (
-	currPlayCmd *exec.Cmd  // 当前正在运行的 mpv 进程
-	playMu      sync.Mutex // 确保操作进程时的线程安全
+	currPlayCmd        *exec.Cmd  // 当前正在运行的 mpv 进程
+	playMu             sync.Mutex // 确保操作进程时的线程安全
+	currentStationName string
+	currentStationURL  string
 )
 
 func main() {
@@ -116,6 +126,8 @@ func main() {
 	r.HandleFunc("/api/fm/list", GetFMListHandler).Methods("GET")
 	r.HandleFunc("/api/fm/play", PlayFMHandler).Methods("POST")
 	r.HandleFunc("/api/fm/stop", StopFMHandler).Methods("POST")
+	r.HandleFunc("/api/fm/status", GetFMStatusHandler).Methods("GET")
+
 	// 前端页面路由
 	r.HandleFunc("/", IndexHandler)
 
@@ -494,6 +506,8 @@ func PlayFMHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	playMu.Lock()
+	currentStationName = req.Name // 记录当前电台名
+	currentStationURL = req.URL   // 记录当前 URL
 	defer playMu.Unlock()
 
 	// 1. 如果有正在播的台，强制杀掉旧进程
@@ -537,4 +551,25 @@ func StopFMHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(map[string]string{"status": "stopped"})
+}
+
+// 核心：增加查询接口
+func GetFMStatusHandler(w http.ResponseWriter, r *http.Request) {
+	playMu.Lock()
+	defer playMu.Unlock()
+
+	playing := false
+	if currPlayCmd != nil && currPlayCmd.Process != nil {
+		// 检查进程是否还在运行
+		err := currPlayCmd.Process.Signal(syscall.Signal(0))
+		if err == nil {
+			playing = true
+		}
+	}
+
+	json.NewEncoder(w).Encode(PlayerStatus{
+		CurrName:  currentStationName,
+		CurrURL:   currentStationURL,
+		IsPlaying: playing,
+	})
 }

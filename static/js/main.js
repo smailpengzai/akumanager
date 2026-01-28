@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchVolume();
 // 页面加载时获取磁盘使用情况
     fetchDiskUsage();
-
+    initRadio();
 
     // // 每1秒刷新一次服务状态
     setInterval(fetchServicesStatus, 5000);
@@ -20,16 +20,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 let allStations = [];
 let currentIdx = -1;
+let currentPlayingName = ""; // 改用名称追踪当前播放
 let isPlaying = false;
 
 // 加载电台列表
 function loadFMList() {
-    fetch('/api/fm/list')
+    return fetch('/api/fm/list')
         .then(res => res.json())
         .then(data => {
             allStations = data.channels;
             renderList(allStations);
-            document.getElementById('lcd-status').innerText = "UPDATED: " + (data.updatetime || 'NOW');
+            const statusEl = document.getElementById('lcd-status');
+            if(statusEl) statusEl.innerText = "UPDATED: " + (data.updatetime || 'NOW');
         });
 }
 
@@ -37,16 +39,40 @@ function loadFMList() {
 function renderList(stations) {
     const list = document.getElementById('fmList');
     list.innerHTML = '';
-    stations.forEach((ch, index) => {
+    stations.forEach((ch) => {
         const div = document.createElement('div');
-        // 这里的 class 会应用我们上面写的 CSS
-        div.className = `fm-item ${currentIdx === index ? 'active' : ''}`;
-        div.innerHTML = `<span>📻 ${ch.name}</span>`; // 用 span 包裹一下
-        div.onclick = () => playStation(index);
+        // 根据名称判断高亮，解决搜索后的显示问题
+        const isActive = (ch.name === currentPlayingName);
+        div.className = `fm-item ${isActive ? 'active' : ''}`;
+        div.innerHTML = `<span>📻 ${ch.name}</span>`;
+
+        // 【关键修改点】：绑定点击事件时，直接通过名称查找，不再使用 index
+        div.onclick = () => playStationByName(ch.name);
         list.appendChild(div);
     });
 }
 
+// 3. 核心修改：通过名称播放
+function playStationByName(name) {
+    const ch = allStations.find(s => s.name === name);
+    if (!ch) return;
+
+    currentPlayingName = name;
+    document.getElementById('lcd-name').innerText = ch.name;
+    document.getElementById('lcd-status').innerText = "CONNECTING...";
+
+    fetch('/api/fm/play', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ url: ch.url, name: ch.name })
+    }).then(() => {
+        isPlaying = true;
+        document.getElementById('lcd-status').innerText = "PLAYING";
+        document.getElementById('playPauseBtn').innerText = "⏸";
+        // 重新渲染列表以更新高亮（无论当前是否在搜索结果中）
+        filterStations();
+    });
+}
 // 搜索过滤
 function filterStations() {
     const kw = document.getElementById('fmSearch').value.toLowerCase();
@@ -92,17 +118,76 @@ function stopFM() {
 }
 
 function nextStation() {
-    let next = (currentIdx + 1) % allStations.length;
-    playStation(next);
+    if (allStations.length === 0) return;
+    let idx = allStations.findIndex(s => s.name === currentPlayingName);
+    let next = (idx + 1) % allStations.length;
+    playStationByName(allStations[next].name);
 }
 
 function prevStation() {
-    let prev = (currentIdx - 1 + allStations.length) % allStations.length;
-    playStation(prev);
+    if (allStations.length === 0) return;
+    let idx = allStations.findIndex(s => s.name === currentPlayingName);
+    let prev = (idx - 1 + allStations.length) % allStations.length;
+    playStationByName(allStations[prev].name);
 }
 
 // 自动加载
-document.addEventListener('DOMContentLoaded', loadFMList);
+// 修改初始化函数
+async function initRadio() {
+    await loadFMList(); // 必须 await 确保列表 DOM 生成完毕
+    checkCurrentPlaying();
+};
+function checkCurrentPlaying() {
+    fetch('/api/fm/status')
+        .then(res => res.json())
+        .then(data => {
+            if (data.is_playing && data.name) {
+                currentPlayingName = data.name;
+                document.getElementById('lcd-name').innerText = data.name;
+                document.getElementById('lcd-status').innerText = "PLAYING";
+                document.getElementById('playPauseBtn').innerText = "⏸";
+                isPlaying = true;
+
+                // 刷新高亮显示并滚动到对应位置
+                renderList(allStations);
+                setTimeout(() => {
+                    const activeItem = document.querySelector('.fm-item.active');
+                    if (activeItem) activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
+        });
+}
+function updateLCDTime() {
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2, '0') + ":" +
+        now.getMinutes().toString().padStart(2, '0');
+    const timeEl = document.getElementById('lcd-time');
+    if (timeEl) timeEl.innerText = timeStr;
+}
+setInterval(updateLCDTime, 1000);
+function restoreFMStatus() {
+    fetch('/api/fm/status')
+        .then(res => res.json())
+        .then(status => {
+            if (status.playing && status.name) {
+                // 更新 LCD 显示
+                document.getElementById('lcd-name').innerText = status.name;
+                document.getElementById('lcd-status').innerText = "PLAYING";
+                document.getElementById('playPauseBtn').innerText = "⏸";
+                isPlaying = true;
+
+                // 在列表中高亮显示
+                const items = document.querySelectorAll('.fm-item');
+                items.forEach((item, index) => {
+                    if (item.innerText.includes(status.name)) {
+                        item.classList.add('active');
+                        currentIndex = index; // 恢复当前索引，确保“上下台”功能正常
+                        item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                });
+            }
+        });
+}
 
 var cityCode = ""
 // 获取服务状态
