@@ -51,6 +51,7 @@ var (
 		{Name: "ttyd", Description: "网页终端服务"},
 		{Name: "shairport-sync", Description: "AirPlay服务"},
 		{Name: "bluealsad-aplay", Description: "蓝牙服务"},
+		//{Name: "btstart", Description: "蓝牙服务"},
 		{Name: "dlna", Description: "DLNA服务"},
 		{Name: "alist", Description: "文件服务"},
 		{Name: "akuweb", Description: "网页控制台服务"},
