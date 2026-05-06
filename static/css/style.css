@@ -363,26 +363,118 @@ body {
 }
 
 
-.radio-main-layout { display: flex; gap: 15px; background: #1a1a1a; padding: 15px; border-radius: 10px; border: 2px solid #333; }
-.radio-display { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.radio-main-layout {
+    display: flex;
+    gap: 0; /* 去掉 gap，改用 padding 更有整体感 */
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #333;
+    width: 100%;
+    box-sizing: border-box;
+}
+.radio-display {
+    flex: 0 0 50%; /* 锁定占 50% */
+    padding-right: 15px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
 .lcd-screen {
     background: #92a47e;
     color: #1a2310;
     text-shadow: 1px 1px 0px rgba(255,255,255,0.2); /* 增加一点立体感 */
     font-family: "Courier New", monospace;
     font-weight: bold;
+    height: 130px ;
+    /* 新增：垂直分布逻辑 */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around; /* 稍微均匀一点 */
+    padding: 12px 15px;             /* 留一点内边距 */
+    box-sizing: border-box;         /* 保证 padding 不撑大盒子 */
+    border: 2px solid rgba(0,0,0,0.1);
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); /* 屏幕内凹质感 */
+    background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%),linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+    background-size: 100% 2px, 3px 100%; /* 模拟扫描线 */
+    overflow: hidden; /* 必须加，防止滚动文字溢出 */
 }
-#lcd-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; }
+#lcd-name {
+    font-weight: bold;
+    font-size: 1.4em;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+    /* 名字加粗加亮 */
+    color: #0d1405;
+    letter-spacing: -1px; /* 紧凑的点阵感 */
+}
+/* 内部包裹一个容器来执行滚动 */
+#lcd-name span {
+    display: inline-block;
+    padding-left: 100%; /* 从最右侧开始 */
+    animation: marquee 10s linear infinite;
+}
+
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+}
+#lcd-status {
+    font-size: 1.0rem;
+    opacity: 0.8;
+    letter-spacing: 1px;
+}
+
+#lcd-time {
+    font-size: 1.3rem;
+    text-align: right; /* 时间靠右，看起来更专业 */
+}
 .radio-controls { display: flex; justify-content: space-around; margin-top: 15px; }
-.radio-controls button { background: #333; color: white; border: 1px solid #444; padding: 10px; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; transition: 0.2s; }
+.radio-controls button {
+    background: #333;
+    border: none;
+    color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
 .radio-controls button:hover { background: #444; border-color: #ff6600; }
 .radio-controls .main-btn { background: #ff6600; color: #fff; width: 55px; height: 55px; font-size: 1.2em; }
+/* 按钮点击时的物理下沉感 */
+.radio-controls button:active {
+    transform: translateY(2px);
+    filter: brightness(0.8);
+}
+.radio-list-area {
+    flex: 0 0 50%; /* 锁定占 50% */
+    border-left: 1px solid #333;
+    padding-left: 15px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+/* 播放按钮突出显示 */
+#playPauseBtn {
+    background: #e67e22; /* 橙色更有活力 */
+    width: 55px;
+    height: 55px;
+    font-size: 1.2rem;
+}
+#playPauseBtn:hover {
+    background: #f39c12;
+    transform: scale(1.05);
+}
 
-.radio-list-area { flex: 1; border-left: 1px solid #333; padding-left: 15px; display: flex; flex-direction: column; }
-.fm-scroll-list { height: 160px; overflow-y: auto; font-size: 0.9em; }
-
-
-
+.fm-scroll-list {
+    height: 185px; /* 匹配左侧面板高度 */
+    overflow-y: auto;
+    font-size: 0.9em;
+    padding-right: 5px;
+}
 /* 确保 active 类有明显的颜色 */
 .fm-item.active {
     background-color: rgba(255, 102, 0, 0.15) !important;
@@ -390,7 +482,6 @@ body {
     border-left: 4px solid #ff6600;
     font-weight: bold;
 }
-
 /* 顺便修复你提到的字体看不清：强制列表文字为浅灰色 */
 .fm-item {
     color: #ccc !important;
@@ -399,17 +490,28 @@ body {
 }
 /* 悬停时的颜色变化 */
 .fm-item:hover {
-    background-color: #2c2c2c;
-    color: #ff6600; /* 悬停时变成橙色，更有互动感 */
+    background-color: #252525;
+    color: #fff !important; /* 悬停时文字变亮 */
 }
 /* 搜索框输入的文字颜色 */
 #fmSearch {
-    background: #333;
-    border: 1px solid #444;
-    color: #ffffff; /* 确保搜索框输入的字也是白的 */
-    padding: 8px;
-    width: 100%;
-    box-sizing: border-box;
+    /*background: #333;*/
+    /*border: 1px solid #444;*/
+    /*color: #ffffff; !* 确保搜索框输入的字也是白的 *!*/
+    /*padding: 8px;*/
+    /*width: 100%;*/
+    /*box-sizing: border-box;*/
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #333;
+    color: #eee;
+    padding: 10px 15px;
+    border-radius: 20px; /* 圆角搜索框更现代 */
+    margin-bottom: 10px;
+}
+#fmSearch:focus {
+    outline: none;
+    border-color: #e67e22; /* 与播放按钮橙色统一 */
+    background: rgba(255,255,255,0.1);
 }
 /* 滚动条美化（可选，防止白色滚动条太刺眼） */
 .fm-scroll-list::-webkit-scrollbar {
@@ -418,4 +520,45 @@ body {
 .fm-scroll-list::-webkit-scrollbar-thumb {
     background: #444;
     border-radius: 3px;
+}
+
+/* --- 移动端自适应核心逻辑 --- */
+@media (max-width: 768px) {
+    .radio-main-layout {
+        flex-direction: column; /* 关键：从横向改为纵向 */
+        gap: 20px;
+    }
+
+    .radio-display, .radio-list-area {
+        flex: 1 1 auto; /* 取消 50% 的锁定 */
+        width: 100%;    /* 占满全屏宽度 */
+        padding: 0;     /* 清除侧边距 */
+    }
+
+    .radio-list-area {
+        border-left: none;      /* 去掉左侧线 */
+        border-top: 1px solid #333; /* 改为顶部线 */
+        padding-top: 20px;
+        padding-left: 0;
+    }
+
+    .fm-scroll-list {
+        height: 250px; /* 手机端可以适当拉长列表，减少翻页频率 */
+    }
+
+    .lcd-screen {
+        height: 140px; /* 手机上屏幕可以稍微再大一点，方便看字 */
+    }
+
+    .fm-item {
+        padding: 15px 10px; /* 增加 3px 高度，更适合手指点击 */
+        font-size: 1rem;    /* 稍微调大字号，防止点错 */
+    }
+}
+
+/* --- 电脑端增强：确保左右等高 --- */
+.radio-main-layout {
+    display: flex;
+    flex-wrap: nowrap; /* 强行并排 */
+    align-items: flex-start;
 }

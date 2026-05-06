@@ -58,7 +58,7 @@ function playStationByName(name) {
     if (!ch) return;
 
     currentPlayingName = name;
-    document.getElementById('lcd-name').innerText = ch.name;
+    document.getElementById('lcd-name').innerHTML = `<span>${ch.name}</span>`;
     document.getElementById('lcd-status').innerText = "CONNECTING...";
 
     fetch('/api/fm/play', {
@@ -86,7 +86,7 @@ function playStation(index) {
     currentIdx = index;
     const ch = allStations[index];
 
-    document.getElementById('lcd-name').innerText = ch.name;
+    document.getElementById('lcd-name').innerHTML = `<span>${ch.name}</span>`;
     document.getElementById('lcd-status').innerText = "CONNECTING...";
 
     fetch('/api/fm/play', {
@@ -104,8 +104,16 @@ function playStation(index) {
 function togglePlayPause() {
     if (isPlaying) {
         stopFM();
-    } else if (currentIdx !== -1) {
-        playStation(currentIdx);
+    } else {
+        // 逻辑：优先尝试恢复当前记录的名字，如果没有（首次加载），则尝试当前索引
+        if (currentPlayingName !== "") {
+            playStationByName(currentPlayingName);
+        } else if (currentIdx !== -1) {
+            playStation(currentIdx);
+        } else if (allStations.length > 0) {
+            // 如果什么状态都没有，默认播第一个台
+            playStationByName(allStations[0].name);
+        }
     }
 }
 
@@ -113,7 +121,8 @@ function stopFM() {
     fetch('/api/fm/stop', { method: 'POST' }).then(() => {
         isPlaying = false;
         document.getElementById('playPauseBtn').innerText = "▶";
-        document.getElementById('lcd-status').innerText = "STOPPED";
+        document.getElementById('lcd-status').innerText = "PAUSED"; // 改为 PAUSED 更像收音机
+        // 注意：不要在这里清空 currentPlayingName，否则恢复播放时会找不到目标
     });
 }
 
@@ -143,7 +152,7 @@ function checkCurrentPlaying() {
         .then(data => {
             if (data.is_playing && data.name) {
                 currentPlayingName = data.name;
-                document.getElementById('lcd-name').innerText = data.name;
+                document.getElementById('lcd-name').innerHTML = `<span>${data.name}</span>`;
                 document.getElementById('lcd-status').innerText = "PLAYING";
                 document.getElementById('playPauseBtn').innerText = "⏸";
                 isPlaying = true;
@@ -171,7 +180,7 @@ function restoreFMStatus() {
         .then(status => {
             if (status.playing && status.name) {
                 // 更新 LCD 显示
-                document.getElementById('lcd-name').innerText = status.name;
+                document.getElementById('lcd-name').innerHTML = `<span>${status.name}</span>`;
                 document.getElementById('lcd-status').innerText = "PLAYING";
                 document.getElementById('playPauseBtn').innerText = "⏸";
                 isPlaying = true;

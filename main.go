@@ -521,10 +521,14 @@ func PlayFMHandler(w http.ResponseWriter, r *http.Request) {
 	// --cache=yes: 开启网络缓存
 	// --cache-secs=10: 预缓存 10 秒，防止断断续续
 	fmt.Printf("[%s] 正在播放电台: %s\n", time.Now().Format("15:04:05"), req.Name)
+	// 修改 PlayFMHandler 中的 exec.Command
 	currPlayCmd = exec.Command("mpv",
 		"--no-video",
-		"--cache=yes",
-		"--cache-secs=10",
+		"--cache=yes",                 // 必须开启缓存
+		"--cache-secs=30",             // 预读缓存从 5秒 增加到 30秒，对抗网络抖动
+		"--demuxer-max-bytes=32M",     // 限制缓存占用的最大内存，防止 arm 盒子 OOM (内存溢出)
+		"--demuxer-readahead-secs=20", // 预读数据长度
+		"--audio-buffer=0.5",          // 适当的音频缓冲
 		req.URL,
 	)
 
